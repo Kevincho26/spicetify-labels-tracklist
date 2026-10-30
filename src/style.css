@@ -1,0 +1,88 @@
+.spicetify-playlist-labels-cell,
+.spicetify-playlist-labels-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.spicetify-playlist-labels-header {
+    color: var(--text-subdued, #b3b3b3);
+}
+
+.spicetify-playlist-labels-labels {
+    display: flex;
+    /* First label (rated playlists, then Liked Songs) sits closest to the right. */
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+}
+
+.spicetify-playlist-labels-labels::after {
+    content: '⋯';
+    display: none;
+    width: 14px;
+    text-align: center;
+    color: var(--text-subdued, #b3b3b3);
+}
+
+.spicetify-playlist-labels-labels.spicetify-playlist-labels-overflow::after {
+    display: block;
+}
+
+.spicetify-playlist-labels-label {
+    flex: 0 0 auto;
+    width: var(--spicetify-playlist-labels-size, 28px);
+    height: var(--spicetify-playlist-labels-size, 28px);
+    border-radius: calc(var(--spicetify-playlist-labels-size, 28px) * 0.1);
+    overflow: hidden;
+    cursor: pointer;
+    background-color: var(--background-tinted-base, rgba(255, 255, 255, 0.1));
+}
+
+.spicetify-playlist-labels-label:hover {
+    outline: 1px solid var(--text-base, #fff);
+}
+
+.spicetify-playlist-labels-liked {
+    background: linear-gradient(135deg, #450af5, #c4efd9);
+}
+
+.spicetify-playlist-labels-label > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.spicetify-playlist-labels-menu {
+    position: fixed;
+    z-index: 9999;
+    padding: 4px;
+    border-radius: 4px;
+    background-color: var(--background-elevated-highlight, #3e3e3e);
+    box-shadow: 0 16px 24px rgba(0, 0, 0, 0.3), 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+.spicetify-playlist-labels-menu > button {
+    display: block;
+    max-width: 320px;
+    padding: 12px 12px;
+    border: 0;
+    border-radius: 2px;
+    background: none;
+    color: var(--text-base, #fff);
+    font: inherit;
+    font-size: 0.875rem;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.spicetify-playlist-labels-menu > button:hover {
+    background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));
+}

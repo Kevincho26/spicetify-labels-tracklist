@@ -1,4 +1,7 @@
-import { getContents, getLikedTracks, getLikedTracksCount, getPlaylistItems } from "./api";
+import { getContents, getImageUrl, getLikedTracks, getLikedTracksCount, getPlaylistItems } from "./api";
+
+// Playlists inside a folder with this name are listed last (e.g. star rating playlists).
+const RATED_FOLDER_NAME = localStorage.getItem('spicetify-playlist-labels:rated-folder') || 'Rated';
 
 function getPlaylistsFromContents(contents) {
     let playlists = [];
@@ -11,7 +14,7 @@ function getPlaylistsFromContents(contents) {
             else
                 playlists.push(item);
         } else if (item.type === 'folder' && item.items) {
-            item.items.forEach(i => traverse(i, item.name == 'Rated'));
+            item.items.forEach(i => traverse(i, isRated || item.name == RATED_FOLDER_NAME));
         }
     }
 
@@ -42,13 +45,13 @@ async function getDb(): Promise<IDBDatabase> {
             reject(event);
         };
         request.onupgradeneeded = (event) => {
-            const db = event.target.result;
+            const db = (event.target as IDBOpenDBRequest).result;
 
             db.createObjectStore("playlists", { keyPath: "uri" });
             db.createObjectStore("playlistItems", { keyPath: "uri" });
         };
         request.onsuccess = (event) => {
-            resolve(event.target.result);
+            resolve((event.target as IDBOpenDBRequest).result);
         };
     });
 }
@@ -157,8 +160,8 @@ function addPlaylists(trackUriToPlaylistData, playlists: any[], uriToPlaylistIte
                     uri: playlist.uri,
                     name: playlist.name,
                     trackUid: playlistItem.uid,
-                    image: playlist.images[0]?.url || '',
-                    isOwnPlaylist: playlist.isOwnedBySelf,
+                    image: getImageUrl(playlist.images),
+                    isOwnPlaylist: playlist.isOwnedBySelf ?? playlist.owner?.username === Spicetify.Platform.username,
                     isLikedTracks: false
                 });
             }
@@ -167,7 +170,7 @@ function addPlaylists(trackUriToPlaylistData, playlists: any[], uriToPlaylistIte
 }
 
 function addLikedTracks(trackUriToPlaylistData, likedTracks) {
-    likedTracks.forEach((item) => {
+    (likedTracks ?? []).forEach((item) => {
         const trackUri = item.uri;
         if (!trackUriToPlaylistData[trackUri])
             trackUriToPlaylistData[trackUri] = [];
@@ -198,7 +201,7 @@ export async function updatePlaylistData(uri) {
     cachedUriToPlaylistItems[uri] = updatedPlaylistItems;
 
     const trackUriToPlaylistData = {};
-    playlists = playlists.sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
+    playlists = playlists.sort((a, b) => new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime());
     const ratedPlaylists = playlists.filter((playlist) => playlist.isRatedPlaylist);
     const nonRatedPlaylists = playlists.filter((playlist) => !playlist.isRatedPlaylist);
     const likedTracks = cachedUriToPlaylistItems['likedTracks'];
@@ -226,7 +229,7 @@ export async function updateLikedTracks() {
     });
 
     const trackUriToPlaylistData = {};
-    const playlists = cachedPlaylists.sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
+    const playlists = cachedPlaylists.sort((a, b) => new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime());
     const ratedPlaylists = playlists.filter((playlist) => playlist.isRatedPlaylist);
     const nonRatedPlaylists = playlists.filter((playlist) => !playlist.isRatedPlaylist);
 
@@ -292,7 +295,7 @@ export async function getTrackUriToPlaylistData() {
     }
 
     const trackUriToPlaylistData = {};
-    playlists = playlists.sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
+    playlists = playlists.sort((a, b) => new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime());
     const ratedPlaylists = playlists.filter((playlist) => playlist.isRatedPlaylist);
     const nonRatedPlaylists = playlists.filter((playlist) => !playlist.isRatedPlaylist);
 
@@ -307,4 +310,12 @@ export async function getTrackUriToPlaylistData() {
     localStorage.setItem('spicetify-playlist-labels:liked-tracks-count', `${likedTracksCount}`);
 
     return trackUriToPlaylistData;
+}
+
+export async function clearCache(): Promise<void> {
+    localStorage.removeItem('spicetify-playlist-labels:liked-tracks-count');
+    const db = await getDb();
+    await clearCachedPlaylists(db);
+    await clearCachedPlaylistItems(db);
+    db.close();
 }

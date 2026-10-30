@@ -45,7 +45,6 @@
     border-radius: 4px;
     overflow: hidden;
     background-color: var(--background-tinted-base, rgba(255, 255, 255, 0.1));
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .spicetify-playlist-labels-cover > img {
@@ -137,10 +136,6 @@
 .spicetify-playlist-labels-menu > button:hover,
 .spicetify-playlist-labels-menu > button:focus-visible {
     background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));
-}
-
-.spicetify-playlist-labels-menu .spicetify-playlist-labels-cover {
-    box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -615,7 +610,7 @@
   }
 
   // src/index.ts
-  var VERSION = "0.3.0";
+  var VERSION = "0.3.1";
   var PREFIX = "spicetify-playlist-labels:";
   var SIZE_VAR = "--spicetify-playlist-labels-size";
   var GAP = 6;
@@ -648,7 +643,9 @@
     maxWidthRatio: readSetting("max-width-ratio", 0.2),
     maxLabels: readSetting("max-labels", 20),
     // Width given to Tagify's rating column while tidying (Tagify uses 150px).
-    tagifyWidth: readSetting("tagify-width", 112)
+    tagifyWidth: readSetting("tagify-width", 112),
+    // Label size relative to the track's own cover art.
+    coverScale: readSetting("cover-scale", 0.8)
   };
   var trackUriToPlaylistData = {};
   var dataVersion = 0;
@@ -727,8 +724,7 @@
     if (highlight && Date.now() > highlight.until) highlight = null;
   }
   function updateWidth(grid, state, sampleRow) {
-    const rowHeight = sampleRow.getBoundingClientRect().height || 56;
-    const size = Math.round(Math.min(40, Math.max(16, rowHeight - 16)));
+    const size = Math.round(Math.min(48, Math.max(16, getTrackCoverSize(sampleRow) * settings.coverScale)));
     const available = grid.getBoundingClientRect().width * settings.maxWidthRatio;
     const fit = Math.max(1, Math.floor((available - MORE_WIDTH + GAP) / (size + GAP)));
     const count = Math.min(state.maxCount, fit, settings.maxLabels);
@@ -737,6 +733,12 @@
     state.visibleCount = count;
     setStyle(grid, WIDTH_VAR, `${width}px`);
     setStyle(grid, SIZE_VAR, `${size}px`);
+  }
+  function getTrackCoverSize(row) {
+    const cover = Array.from(row.querySelectorAll("img")).find((image) => !image.closest(`.${CELL_CLASS}`));
+    const size = cover?.getBoundingClientRect().height ?? 0;
+    if (size >= 16) return size;
+    return Math.max(16, (row.getBoundingClientRect().height || 56) - 16);
   }
   function setStyle(element, property, value) {
     if (element.style.getPropertyValue(property) !== value) element.style.setProperty(property, value);

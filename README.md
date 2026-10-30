@@ -9,7 +9,7 @@ Adds playlist labels to your tracklist indicating the playlists in which a track
 The original project is archived. This fork updates it for **Spotify 1.3.x** (used daily on 1.3.6), where the legacy `main-trackList-*` class names are gone:
 
 - Track rows are found through ARIA roles (`role="grid"`, `role="row"`, `aria-colindex`), and track URIs are read by walking the row's React fiber parents instead of a fixed props path.
-- Labels live in their own **Labels** column, with covers the same size as the track's own cover art.
+- Labels live in their own **Labels** column, with covers sized from the track's own cover art (80% of it by default).
 - **Tidy column widths**: Spotify's columns are recognised by their content (album link, "added by" user link, play count, date), so it works in any language, and resized so the title keeps most of the room: date added, play count, Tagify and duration get fixed widths, album and "added by" shrink.
 - **Tagify compatible**: the order is always `… | Date added | Labels | Tagify | duration`, whichever extension loads first.
 - The label column takes at most 20% of the track list width, so it adapts when the right panel opens and on narrower artist pages. Playlists that don't fit go behind a `+N` button that lists them.
@@ -43,6 +43,7 @@ Advanced settings, set from DevTools (`spicetify enable-devtools`) and applied a
 ```js
 localStorage.setItem('spicetify-playlist-labels:max-width-ratio', '0.25') // largest share of the track list width the column may take (default 0.2)
 localStorage.setItem('spicetify-playlist-labels:max-labels', '10')        // maximum number of labels per row (default 20)
+localStorage.setItem('spicetify-playlist-labels:cover-scale', '0.8')      // label size relative to the track's cover art (default 0.8)
 localStorage.setItem('spicetify-playlist-labels:tagify-width', '112')     // Tagify column width in px while tidying (default 112, Tagify's own is 150)
 localStorage.setItem('spicetify-playlist-labels:rated-folder', 'Rated')   // labels for playlists in this folder come first
 ```

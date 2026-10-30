@@ -42,7 +42,6 @@
     border-radius: 4px;
     overflow: hidden;
     background-color: var(--background-tinted-base, rgba(255, 255, 255, 0.1));
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .spicetify-playlist-labels-cover > img {
@@ -134,10 +133,6 @@
 .spicetify-playlist-labels-menu > button:hover,
 .spicetify-playlist-labels-menu > button:focus-visible {
     background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));
-}
-
-.spicetify-playlist-labels-menu .spicetify-playlist-labels-cover {
-    box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

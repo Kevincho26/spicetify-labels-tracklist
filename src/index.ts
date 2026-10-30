@@ -307,12 +307,17 @@ function queueUpdate(load: () => Promise<Record<string, PlaylistData[]>>) {
     return promise;
 }
 
+// IndexedDB rejects with Events; log the DOMException they carry instead.
+function describeError(error: any) {
+    return error instanceof Event ? (error.target as any)?.error ?? error.type : error;
+}
+
 function setData(promise: Promise<Record<string, PlaylistData[]>>) {
     promise.then((data) => {
         trackUriToPlaylistData = data;
         dataVersion++;
         schedule();
-    }).catch((error) => console.error('[playlist-labels] could not update playlist data', error));
+    }).catch((error) => console.error('[playlist-labels] could not update playlist data', describeError(error)));
 }
 
 function addListener(api: any, event: string, listener: (event: any) => void) {
@@ -409,7 +414,7 @@ async function main() {
     });
 
     queueUpdate(getTrackUriToPlaylistData).catch((error) => {
-        console.error('[playlist-labels] could not load playlists', error);
+        console.error('[playlist-labels] could not load playlists', describeError(error));
         Spicetify.showNotification('Playlist Labels: could not load your playlists (see DevTools console)', true);
     });
 }

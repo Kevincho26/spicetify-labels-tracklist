@@ -8,7 +8,7 @@ export async function getLikedTracksCount() {
 
 export async function getPlaylistItems(uri) {
     const result = await Spicetify.Platform.PlaylistAPI.getContents(uri);
-    return result.items;
+    return toTrackRefs(result.items);
 }
 
 export async function removeTrackFromPlaylist(playlistUri, trackUri, trackUid) {
@@ -16,7 +16,13 @@ export async function removeTrackFromPlaylist(playlistUri, trackUri, trackUid) {
 }
 
 export async function getLikedTracks() {
-    return await Spicetify.Platform.LibraryAPI.getTracks({ limit: Number.MAX_SAFE_INTEGER });
+    const result = await Spicetify.Platform.LibraryAPI.getTracks({ limit: Number.MAX_SAFE_INTEGER });
+    return { ...result, items: toTrackRefs(result.items) };
+}
+
+// Only the URI and UID are needed, and plain objects keep the cache small.
+function toTrackRefs(items: any[] | undefined) {
+    return (items ?? []).map((item) => ({ uri: item.uri, uid: item.uid }));
 }
 
 /**

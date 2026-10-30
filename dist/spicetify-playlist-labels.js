@@ -12,13 +12,17 @@
   }
   async function getPlaylistItems(uri) {
     const result = await Spicetify.Platform.PlaylistAPI.getContents(uri);
-    return result.items;
+    return toTrackRefs(result.items);
   }
   async function removeTrackFromPlaylist(playlistUri, trackUri, trackUid) {
     await Spicetify.Platform.PlaylistAPI.remove(playlistUri, [{ uri: trackUri, uid: trackUid ?? "" }]);
   }
   async function getLikedTracks() {
-    return await Spicetify.Platform.LibraryAPI.getTracks({ limit: Number.MAX_SAFE_INTEGER });
+    const result = await Spicetify.Platform.LibraryAPI.getTracks({ limit: Number.MAX_SAFE_INTEGER });
+    return { ...result, items: toTrackRefs(result.items) };
+  }
+  function toTrackRefs(items) {
+    return (items ?? []).map((item) => ({ uri: item.uri, uid: item.uid }));
   }
   function getImageUrl(images) {
     if (!images?.length) return "";
@@ -150,98 +154,93 @@
     const [playlists, ratedPlaylists] = getPlaylistsFromContents(contents);
     let allPlaylists = [...playlists, ...ratedPlaylists];
     allPlaylists = allPlaylists.map((playlist) => ({
-      ...playlist,
+      uri: playlist.uri,
+      name: playlist.name,
+      images: (playlist.images ?? []).map(({ url, width, height }) => ({ url, width, height })),
+      isOwnedBySelf: playlist.isOwnedBySelf,
+      owner: { username: playlist.owner?.username },
+      addedAt: playlist.addedAt instanceof Date ? playlist.addedAt.toISOString() : playlist.addedAt,
+      totalLength: playlist.totalLength,
       isRatedPlaylist: ratedPlaylists.some((ratedPlaylist) => ratedPlaylist.uri === playlist.uri)
     }));
     return allPlaylists;
   }
-  async function getDb() {
+  var DB_NAME = "spicetify-playlist-labels";
+  var STORES = ["playlists", "playlistItems"];
+  function requestResult(request) {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open("spicetify-playlist-labels", 1);
-      request.onerror = (event) => {
-        reject(event);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+  function transactionDone(transaction) {
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error ?? new Error("IndexedDB transaction aborted"));
+    });
+  }
+  function openDb() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, 1);
+      request.onerror = () => reject(request.error);
+      request.onupgradeneeded = () => {
+        for (const store of STORES) {
+          if (!request.result.objectStoreNames.contains(store)) request.result.createObjectStore(store, { keyPath: "uri" });
+        }
       };
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        db.createObjectStore("playlists", { keyPath: "uri" });
-        db.createObjectStore("playlistItems", { keyPath: "uri" });
-      };
-      request.onsuccess = (event) => {
-        resolve(event.target.result);
+      request.onsuccess = () => {
+        const db = request.result;
+        if (STORES.every((store) => db.objectStoreNames.contains(store))) {
+          resolve(db);
+        } else {
+          db.close();
+          reject(new Error("IndexedDB cache is missing object stores"));
+        }
       };
     });
   }
-  async function getCachedPlaylists(db) {
-    return new Promise((resolve, reject) => {
-      const playlistObjectStoreRequest = db.transaction("playlists").objectStore("playlists").getAll();
-      playlistObjectStoreRequest.onsuccess = (event) => {
-        resolve(playlistObjectStoreRequest.result);
-      };
-      playlistObjectStoreRequest.onerror = (event) => {
-        reject(event);
-      };
+  var dbPromise = null;
+  function getDb() {
+    dbPromise ??= openDb().catch(async (error) => {
+      console.warn("[playlist-labels] could not open cache, recreating it", error);
+      await requestResult(indexedDB.deleteDatabase(DB_NAME)).catch(() => void 0);
+      return openDb();
+    }).catch((error) => {
+      console.warn("[playlist-labels] cache disabled, playlists will be loaded on every start", error);
+      return null;
     });
+    return dbPromise;
   }
-  async function getCachedPlaylistItems(db) {
-    return new Promise((resolve, reject) => {
-      const playlistItemsObjectStoreRequest = db.transaction("playlistItems").objectStore("playlistItems").getAll();
-      playlistItemsObjectStoreRequest.onsuccess = (event) => {
-        resolve(playlistItemsObjectStoreRequest.result);
-      };
-      playlistItemsObjectStoreRequest.onerror = (event) => {
-        reject(event);
-      };
-    });
+  async function readCache(db, store) {
+    if (!db) return [];
+    try {
+      return await requestResult(db.transaction(store).objectStore(store).getAll());
+    } catch (error) {
+      console.warn(`[playlist-labels] could not read ${store} cache`, error);
+      return [];
+    }
   }
-  async function clearCachedPlaylists(db) {
-    return new Promise((resolve, reject) => {
-      const playlistObjectStoreRequest = db.transaction("playlists", "readwrite").objectStore("playlists").clear();
-      playlistObjectStoreRequest.onsuccess = (event) => {
-        resolve();
-      };
-      playlistObjectStoreRequest.onerror = (event) => {
-        reject(event);
-      };
-    });
+  async function writeCache(db, store, records, clear = false) {
+    if (!db) return;
+    try {
+      const transaction = db.transaction(store, "readwrite");
+      const objectStore = transaction.objectStore(store);
+      if (clear) objectStore.clear();
+      records.forEach((record) => objectStore.put(record));
+      await transactionDone(transaction);
+    } catch (error) {
+      console.warn(`[playlist-labels] could not write ${store} cache`, error);
+    }
   }
-  async function clearCachedPlaylistItems(db) {
-    return new Promise((resolve, reject) => {
-      const playlistItemsObjectStoreRequest = db.transaction("playlistItems", "readwrite").objectStore("playlistItems").clear();
-      playlistItemsObjectStoreRequest.onsuccess = (event) => {
-        resolve();
-      };
-      playlistItemsObjectStoreRequest.onerror = (event) => {
-        reject(event);
-      };
-    });
+  var getCachedPlaylists = (db) => readCache(db, "playlists");
+  var getCachedPlaylistItems = (db) => readCache(db, "playlistItems");
+  function cachePlaylists(db, playlists, clear = false) {
+    return writeCache(db, "playlists", playlists, clear);
   }
-  async function cachePlaylists(db, playlists) {
-    return new Promise((resolve, reject) => {
-      const playlistObjectStore = db.transaction("playlists", "readwrite").objectStore("playlists");
-      playlists.forEach((playlist) => {
-        playlistObjectStore.put(playlist);
-      });
-      playlistObjectStore.transaction.oncomplete = (event) => {
-        resolve();
-      };
-      playlistObjectStore.transaction.onerror = (event) => {
-        reject(event);
-      };
-    });
-  }
-  async function cachePlaylistItems(db, uriToPlaylistItems) {
-    return new Promise((resolve, reject) => {
-      const playlistItemsObjectStore = db.transaction("playlistItems", "readwrite").objectStore("playlistItems");
-      Object.entries(uriToPlaylistItems).forEach(([uri, items]) => {
-        playlistItemsObjectStore.put({ uri, items });
-      });
-      playlistItemsObjectStore.transaction.oncomplete = (event) => {
-        resolve();
-      };
-      playlistItemsObjectStore.transaction.onerror = (event) => {
-        reject(event);
-      };
-    });
+  function cachePlaylistItems(db, uriToPlaylistItems, clear = false) {
+    const records = Object.entries(uriToPlaylistItems).map(([uri, items]) => ({ uri, items }));
+    return writeCache(db, "playlistItems", records, clear);
   }
   function addPlaylists(trackUriToPlaylistData2, playlists, uriToPlaylistItems) {
     playlists.forEach((playlist) => {
@@ -373,19 +372,16 @@
     addPlaylists(trackUriToPlaylistData2, ratedPlaylists, uriToPlaylistItems);
     addLikedTracks(trackUriToPlaylistData2, likedTracks);
     addPlaylists(trackUriToPlaylistData2, nonRatedPlaylists, uriToPlaylistItems);
-    await clearCachedPlaylists(db);
-    await clearCachedPlaylistItems(db);
-    await cachePlaylists(db, playlists);
-    await cachePlaylistItems(db, uriToPlaylistItems);
+    await cachePlaylists(db, playlists, true);
+    await cachePlaylistItems(db, uriToPlaylistItems, true);
     localStorage.setItem("spicetify-playlist-labels:liked-tracks-count", `${likedTracksCount}`);
     return trackUriToPlaylistData2;
   }
   async function clearCache() {
     localStorage.removeItem("spicetify-playlist-labels:liked-tracks-count");
     const db = await getDb();
-    await clearCachedPlaylists(db);
-    await clearCachedPlaylistItems(db);
-    db.close();
+    await writeCache(db, "playlists", [], true);
+    await writeCache(db, "playlistItems", [], true);
   }
 
   // src/index.ts
@@ -627,12 +623,15 @@
     setData(promise);
     return promise;
   }
+  function describeError(error) {
+    return error instanceof Event ? error.target?.error ?? error.type : error;
+  }
   function setData(promise) {
     promise.then((data) => {
       trackUriToPlaylistData = data;
       dataVersion++;
       schedule();
-    }).catch((error) => console.error("[playlist-labels] could not update playlist data", error));
+    }).catch((error) => console.error("[playlist-labels] could not update playlist data", describeError(error)));
   }
   function addListener(api, event, listener) {
     try {
@@ -713,7 +712,7 @@
       if (uri) queueUpdate(() => updatePlaylistData(uri));
     });
     queueUpdate(getTrackUriToPlaylistData).catch((error) => {
-      console.error("[playlist-labels] could not load playlists", error);
+      console.error("[playlist-labels] could not load playlists", describeError(error));
       Spicetify.showNotification("Playlist Labels: could not load your playlists (see DevTools console)", true);
     });
   }

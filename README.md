@@ -4,6 +4,15 @@ Adds playlist labels to your tracklist indicating the playlists in which a track
 
 ![Screenshot](screenshot.png)
 
+## Documentation
+
+- [Architecture](docs/architecture.md): how it works and which Spotify internals it depends on.
+- [Decisions](docs/decisions.md): what was decided and how far it was verified.
+- [Testing](docs/testing.md): mock test and manual checks.
+- [History](docs/history.md): how this fork was made.
+- [Publishing](docs/publishing.md): Marketplace checklist.
+- [Changelog](CHANGELOG.md) · [Agent instructions](AGENTS.md)
+
 ## About this fork
 
 The original project is archived. This fork updates it for **Spotify 1.3.x** (used daily on 1.3.6), where the legacy `main-trackList-*` class names are gone:
@@ -53,12 +62,20 @@ localStorage.setItem('spicetify-playlist-labels:rated-folder', 'Rated')   // lab
 
 Run `PlaylistLabels.debug()` in DevTools. It shows how many track lists and rows were detected, the URI read from a sample row, its labels and the grid template in use.
 
-## Build
+## Build and test
 
 ```bash
 npm install
 npm run build
+npx tsc --noEmit
+npm run test:mock
 ```
+
+See [docs/testing.md](docs/testing.md) for what the mock test covers and how to check a build in Spotify.
+
+## Credits
+
+Original extension by [Scott Duffey](https://github.com/duffey) ([duffey/spicetify-playlist-labels](https://github.com/duffey/spicetify-playlist-labels)). Spotify 1.3 update and maintenance of this fork by [Kevin Andrés Choque Claros](https://github.com/Kevincho26).
 
 ## Star Rating Playlist Images
 

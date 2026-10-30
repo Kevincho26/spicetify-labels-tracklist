@@ -1,6 +1,6 @@
 import { getContents, getImageUrl, getLikedTracks, getLikedTracksCount, getPlaylistItems } from "./api";
 
-// Playlists inside a folder with this name are listed last (e.g. star rating playlists).
+// Labels for playlists inside a folder with this name come first (e.g. star rating playlists).
 const RATED_FOLDER_NAME = localStorage.getItem('spicetify-playlist-labels:rated-folder') || 'Rated';
 
 function getPlaylistsFromContents(contents) {

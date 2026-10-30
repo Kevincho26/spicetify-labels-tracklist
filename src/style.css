@@ -2,74 +2,119 @@
 .spicetify-playlist-labels-header {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
     min-width: 0;
     overflow: hidden;
 }
 
-.spicetify-playlist-labels-header {
-    color: var(--text-subdued, #b3b3b3);
+.spicetify-playlist-labels-header > span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .spicetify-playlist-labels-labels {
     display: flex;
-    /* First label (rated playlists, then Liked Songs) sits closest to the right. */
-    flex-direction: row-reverse;
     align-items: center;
     gap: 6px;
-    overflow: hidden;
+    min-width: 0;
+    /* Room for the hover lift and the focus ring. */
+    padding: 2px;
+    margin: -2px;
 }
 
-.spicetify-playlist-labels-labels::after {
-    content: '⋯';
-    display: none;
-    width: 14px;
-    text-align: center;
-    color: var(--text-subdued, #b3b3b3);
-}
-
-.spicetify-playlist-labels-labels.spicetify-playlist-labels-overflow::after {
-    display: block;
-}
-
-.spicetify-playlist-labels-label {
+/* Labels and the "+N" button reset Spotify's button styles. */
+.spicetify-playlist-labels-label,
+.spicetify-playlist-labels-more {
     flex: 0 0 auto;
-    width: var(--spicetify-playlist-labels-size, 28px);
-    height: var(--spicetify-playlist-labels-size, 28px);
-    border-radius: calc(var(--spicetify-playlist-labels-size, 28px) * 0.1);
-    overflow: hidden;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
     cursor: pointer;
+}
+
+.spicetify-playlist-labels-cover {
+    display: block;
+    flex: 0 0 auto;
+    width: var(--spicetify-playlist-labels-size, 40px);
+    height: var(--spicetify-playlist-labels-size, 40px);
+    border-radius: 4px;
+    overflow: hidden;
     background-color: var(--background-tinted-base, rgba(255, 255, 255, 0.1));
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
-.spicetify-playlist-labels-label:hover {
-    outline: 1px solid var(--text-base, #fff);
-}
-
-.spicetify-playlist-labels-liked {
-    background: linear-gradient(135deg, #450af5, #c4efd9);
-}
-
-.spicetify-playlist-labels-label > img {
+.spicetify-playlist-labels-cover > img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
+.spicetify-playlist-labels-cover.spicetify-playlist-labels-liked {
+    background: linear-gradient(135deg, #450af5, #c4efd9);
+}
+
+.spicetify-playlist-labels-label .spicetify-playlist-labels-cover {
+    transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.spicetify-playlist-labels-label:hover .spicetify-playlist-labels-cover {
+    transform: translateY(-1px) scale(1.06);
+}
+
+.spicetify-playlist-labels-label:active .spicetify-playlist-labels-cover {
+    transform: scale(0.96);
+    opacity: 0.85;
+}
+
+.spicetify-playlist-labels-label:focus-visible,
+.spicetify-playlist-labels-more:focus-visible,
+.spicetify-playlist-labels-menu > button:focus-visible {
+    outline: 2px solid var(--text-base, #fff);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.spicetify-playlist-labels-more {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 4px;
+    border-radius: 12px;
+    color: var(--text-subdued, #b3b3b3);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.spicetify-playlist-labels-more:hover {
+    color: var(--text-base, #fff);
+    background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));
+}
+
 .spicetify-playlist-labels-menu {
     position: fixed;
     z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+    max-width: 340px;
+    max-height: min(420px, calc(100vh - 16px));
+    overflow-y: auto;
     padding: 4px;
     border-radius: 4px;
     background-color: var(--background-elevated-highlight, #3e3e3e);
     box-shadow: 0 16px 24px rgba(0, 0, 0, 0.3), 0 6px 8px rgba(0, 0, 0, 0.2);
+    --spicetify-playlist-labels-size: 32px;
 }
 
 .spicetify-playlist-labels-menu > button {
-    display: block;
-    max-width: 320px;
-    padding: 12px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+    padding: 4px 12px 4px 8px;
     border: 0;
     border-radius: 2px;
     background: none;
@@ -77,12 +122,26 @@
     font: inherit;
     font-size: 0.875rem;
     text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
     cursor: pointer;
 }
 
-.spicetify-playlist-labels-menu > button:hover {
+.spicetify-playlist-labels-menu > button > span:last-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.spicetify-playlist-labels-menu > button:hover,
+.spicetify-playlist-labels-menu > button:focus-visible {
     background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));
+}
+
+.spicetify-playlist-labels-menu .spicetify-playlist-labels-cover {
+    box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spicetify-playlist-labels-label .spicetify-playlist-labels-cover {
+        transition: none;
+    }
 }

@@ -9,12 +9,13 @@ export const COLUMN_NAME = 'plabels';
 export const CELL_CLASS = 'spicetify-playlist-labels-cell';
 export const HEADER_CLASS = 'spicetify-playlist-labels-header';
 export const WIDTH_VAR = '--spicetify-playlist-labels-width';
+export const TAGIFY_COLUMN_NAME = 'tagify';
 
 // Columns injected by other extensions that should stay to the right of ours.
 // Tagify always inserts its column right before the last one, so placing ours
 // before it gives the same order no matter which extension runs first.
 const RIGHT_NEIGHBOUR_CELLS = '.tagify-info, .tagify-header';
-const RIGHT_NEIGHBOUR_LINES = ['[tagify]'];
+const RIGHT_NEIGHBOUR_LINES = [`[${TAGIFY_COLUMN_NAME}]`];
 
 const GRID_SELECTOR = [
     '.Root__main-view [role="grid"]',
@@ -66,6 +67,10 @@ export interface RowLayout {
     // Element that owns `grid-template-columns` (the row or a presentation wrapper).
     container: HTMLElement;
     cells: HTMLElement[];
+    // Spotify's own cells, without columns added by other extensions.
+    nativeCells: HTMLElement[];
+    // Tagify's cell, if the row has one.
+    tagify: HTMLElement | null;
     // Cell our column is inserted before.
     anchor: HTMLElement;
 }
@@ -78,9 +83,9 @@ export function getRowLayout(row: HTMLElement): RowLayout | null {
     const container = last.parentElement as HTMLElement;
     const siblings = cells.filter((cell) => cell.parentElement === container);
     const neighbour = Array.from(container.children).find((child) => child.matches(RIGHT_NEIGHBOUR_CELLS)) as HTMLElement | undefined;
-    const anchor = neighbour ?? last;
+    const nativeCells = siblings.filter((cell) => cell !== neighbour);
     if (neighbour && !siblings.includes(neighbour)) siblings.splice(siblings.indexOf(last), 0, neighbour);
-    return { container, cells: siblings, anchor };
+    return { container, cells: siblings, nativeCells, tagify: neighbour ?? null, anchor: neighbour ?? last };
 }
 
 export function insertCell(layout: RowLayout, cell: HTMLElement) {
@@ -94,9 +99,29 @@ export function insertCell(layout: RowLayout, cell: HTMLElement) {
     container.insertBefore(cell, anchor);
 }
 
+const appliedTemplates = new WeakMap<HTMLElement, { template: string; serialized: string }>();
+
+// Skips the write when the row still has the template we gave it, comparing
+// against the browser's own serialization of it.
+export function setTemplate(container: HTMLElement, template: string) {
+    const current = container.style.getPropertyValue('grid-template-columns');
+    const applied = appliedTemplates.get(container);
+    if (applied && applied.template === template && applied.serialized === current) return;
+    container.style.setProperty('grid-template-columns', template, 'important');
+    appliedTemplates.set(container, { template, serialized: container.style.getPropertyValue('grid-template-columns') });
+}
+
+// The template Spotify gives the row, read from its CSS variable or, when
+// that's missing, from the inline style.
+export function getNativeTemplate(container: HTMLElement): string {
+    const variable = getComputedStyle(container).getPropertyValue('--grid-template-columns').trim();
+    return variable.includes('[last]') ? variable : container.style.getPropertyValue('grid-template-columns');
+}
+
 /**
- * Makes sure the row's grid template has a track for our column. Returns
- * false when the template is already up to date.
+ * Fallback for rows whose template couldn't be parsed: only adds a track for
+ * our column and leaves the rest as it is. Returns false when the template
+ * is already up to date.
  */
 export function ensureTemplate(layout: RowLayout): boolean {
     const { container } = layout;

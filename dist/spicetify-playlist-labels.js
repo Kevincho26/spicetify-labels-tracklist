@@ -1,7 +1,154 @@
 // Playlist Labels for Spicetify - https://github.com/duffey/spicetify-playlist-labels (fork for Spotify 1.3)
 (() => {
   // src/style.css
-  var style_default = ".spicetify-playlist-labels-cell,\n.spicetify-playlist-labels-header {\n    display: flex;\n    align-items: center;\n    justify-content: flex-end;\n    min-width: 0;\n    overflow: hidden;\n}\n\n.spicetify-playlist-labels-header {\n    color: var(--text-subdued, #b3b3b3);\n}\n\n.spicetify-playlist-labels-labels {\n    display: flex;\n    /* First label (rated playlists, then Liked Songs) sits closest to the right. */\n    flex-direction: row-reverse;\n    align-items: center;\n    gap: 6px;\n    overflow: hidden;\n}\n\n.spicetify-playlist-labels-labels::after {\n    content: '\u22EF';\n    display: none;\n    width: 14px;\n    text-align: center;\n    color: var(--text-subdued, #b3b3b3);\n}\n\n.spicetify-playlist-labels-labels.spicetify-playlist-labels-overflow::after {\n    display: block;\n}\n\n.spicetify-playlist-labels-label {\n    flex: 0 0 auto;\n    width: var(--spicetify-playlist-labels-size, 28px);\n    height: var(--spicetify-playlist-labels-size, 28px);\n    border-radius: calc(var(--spicetify-playlist-labels-size, 28px) * 0.1);\n    overflow: hidden;\n    cursor: pointer;\n    background-color: var(--background-tinted-base, rgba(255, 255, 255, 0.1));\n}\n\n.spicetify-playlist-labels-label:hover {\n    outline: 1px solid var(--text-base, #fff);\n}\n\n.spicetify-playlist-labels-liked {\n    background: linear-gradient(135deg, #450af5, #c4efd9);\n}\n\n.spicetify-playlist-labels-label > img {\n    display: block;\n    width: 100%;\n    height: 100%;\n    object-fit: cover;\n}\n\n.spicetify-playlist-labels-menu {\n    position: fixed;\n    z-index: 9999;\n    padding: 4px;\n    border-radius: 4px;\n    background-color: var(--background-elevated-highlight, #3e3e3e);\n    box-shadow: 0 16px 24px rgba(0, 0, 0, 0.3), 0 6px 8px rgba(0, 0, 0, 0.2);\n}\n\n.spicetify-playlist-labels-menu > button {\n    display: block;\n    max-width: 320px;\n    padding: 12px 12px;\n    border: 0;\n    border-radius: 2px;\n    background: none;\n    color: var(--text-base, #fff);\n    font: inherit;\n    font-size: 0.875rem;\n    text-align: left;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    cursor: pointer;\n}\n\n.spicetify-playlist-labels-menu > button:hover {\n    background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));\n}\n";
+  var style_default = `.spicetify-playlist-labels-cell,
+.spicetify-playlist-labels-header {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.spicetify-playlist-labels-header > span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.spicetify-playlist-labels-labels {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    /* Room for the hover lift and the focus ring. */
+    padding: 2px;
+    margin: -2px;
+}
+
+/* Labels and the "+N" button reset Spotify's button styles. */
+.spicetify-playlist-labels-label,
+.spicetify-playlist-labels-more {
+    flex: 0 0 auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.spicetify-playlist-labels-cover {
+    display: block;
+    flex: 0 0 auto;
+    width: var(--spicetify-playlist-labels-size, 40px);
+    height: var(--spicetify-playlist-labels-size, 40px);
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: var(--background-tinted-base, rgba(255, 255, 255, 0.1));
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.spicetify-playlist-labels-cover > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.spicetify-playlist-labels-cover.spicetify-playlist-labels-liked {
+    background: linear-gradient(135deg, #450af5, #c4efd9);
+}
+
+.spicetify-playlist-labels-label .spicetify-playlist-labels-cover {
+    transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.spicetify-playlist-labels-label:hover .spicetify-playlist-labels-cover {
+    transform: translateY(-1px) scale(1.06);
+}
+
+.spicetify-playlist-labels-label:active .spicetify-playlist-labels-cover {
+    transform: scale(0.96);
+    opacity: 0.85;
+}
+
+.spicetify-playlist-labels-label:focus-visible,
+.spicetify-playlist-labels-more:focus-visible,
+.spicetify-playlist-labels-menu > button:focus-visible {
+    outline: 2px solid var(--text-base, #fff);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.spicetify-playlist-labels-more {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 4px;
+    border-radius: 12px;
+    color: var(--text-subdued, #b3b3b3);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.spicetify-playlist-labels-more:hover {
+    color: var(--text-base, #fff);
+    background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));
+}
+
+.spicetify-playlist-labels-menu {
+    position: fixed;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    min-width: 180px;
+    max-width: 340px;
+    max-height: min(420px, calc(100vh - 16px));
+    overflow-y: auto;
+    padding: 4px;
+    border-radius: 4px;
+    background-color: var(--background-elevated-highlight, #3e3e3e);
+    box-shadow: 0 16px 24px rgba(0, 0, 0, 0.3), 0 6px 8px rgba(0, 0, 0, 0.2);
+    --spicetify-playlist-labels-size: 32px;
+}
+
+.spicetify-playlist-labels-menu > button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+    padding: 4px 12px 4px 8px;
+    border: 0;
+    border-radius: 2px;
+    background: none;
+    color: var(--text-base, #fff);
+    font: inherit;
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.spicetify-playlist-labels-menu > button > span:last-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.spicetify-playlist-labels-menu > button:hover,
+.spicetify-playlist-labels-menu > button:focus-visible {
+    background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));
+}
+
+.spicetify-playlist-labels-menu .spicetify-playlist-labels-cover {
+    box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spicetify-playlist-labels-label .spicetify-playlist-labels-cover {
+        transition: none;
+    }
+}
+`;
 
   // src/api.ts
   async function getContents() {
@@ -43,8 +190,9 @@
   var CELL_CLASS = "spicetify-playlist-labels-cell";
   var HEADER_CLASS = "spicetify-playlist-labels-header";
   var WIDTH_VAR = "--spicetify-playlist-labels-width";
+  var TAGIFY_COLUMN_NAME = "tagify";
   var RIGHT_NEIGHBOUR_CELLS = ".tagify-info, .tagify-header";
-  var RIGHT_NEIGHBOUR_LINES = ["[tagify]"];
+  var RIGHT_NEIGHBOUR_LINES = [`[${TAGIFY_COLUMN_NAME}]`];
   var GRID_SELECTOR = [
     '.Root__main-view [role="grid"]',
     'main [role="grid"]',
@@ -84,9 +232,9 @@
     const container = last.parentElement;
     const siblings = cells.filter((cell) => cell.parentElement === container);
     const neighbour = Array.from(container.children).find((child) => child.matches(RIGHT_NEIGHBOUR_CELLS));
-    const anchor = neighbour ?? last;
+    const nativeCells = siblings.filter((cell) => cell !== neighbour);
     if (neighbour && !siblings.includes(neighbour)) siblings.splice(siblings.indexOf(last), 0, neighbour);
-    return { container, cells: siblings, anchor };
+    return { container, cells: siblings, nativeCells, tagify: neighbour ?? null, anchor: neighbour ?? last };
   }
   function insertCell(layout, cell) {
     const { container, cells, anchor } = layout;
@@ -97,6 +245,18 @@
       if (otherIndex >= index) other.setAttribute("aria-colindex", String(otherIndex + 1));
     }
     container.insertBefore(cell, anchor);
+  }
+  var appliedTemplates = /* @__PURE__ */ new WeakMap();
+  function setTemplate(container, template) {
+    const current = container.style.getPropertyValue("grid-template-columns");
+    const applied = appliedTemplates.get(container);
+    if (applied && applied.template === template && applied.serialized === current) return;
+    container.style.setProperty("grid-template-columns", template, "important");
+    appliedTemplates.set(container, { template, serialized: container.style.getPropertyValue("grid-template-columns") });
+  }
+  function getNativeTemplate(container) {
+    const variable = getComputedStyle(container).getPropertyValue("--grid-template-columns").trim();
+    return variable.includes("[last]") ? variable : container.style.getPropertyValue("grid-template-columns");
   }
   function ensureTemplate(layout) {
     const { container } = layout;
@@ -129,6 +289,76 @@
     });
     parts.splice(insertAt, 0, track);
     return parts.join(" ");
+  }
+
+  // src/layout.ts
+  var TIDY_SIZES = {
+    index: null,
+    title: "minmax(200px, 4fr)",
+    album: "minmax(120px, 2fr)",
+    addedBy: "minmax(110px, 1.25fr)",
+    date: "124px",
+    plays: "124px",
+    other: null,
+    last: "minmax(120px, 0.5fr)"
+  };
+  var TAGIFY_DEFAULT_WIDTH = "150px";
+  var INJECTED_COLUMNS = [COLUMN_NAME, TAGIFY_COLUMN_NAME];
+  function parseTemplate(template) {
+    const tokens = [];
+    let depth = 0;
+    let current = "";
+    for (const char of template.trim()) {
+      if (char === "(" || char === "[") depth++;
+      if (char === ")" || char === "]") depth--;
+      if (/\s/.test(char) && depth === 0) {
+        if (current) tokens.push(current);
+        current = "";
+        continue;
+      }
+      current += char;
+    }
+    if (current) tokens.push(current);
+    const tracks = [];
+    let names = [];
+    for (const token of tokens) {
+      if (token.startsWith("[")) {
+        names.push(...token.slice(1, -1).split(/\s+/).filter(Boolean));
+      } else {
+        if (token.startsWith("repeat(")) return null;
+        tracks.push({ names, size: token });
+        names = [];
+      }
+    }
+    const native = tracks.filter((track) => !track.names.some((name) => INJECTED_COLUMNS.includes(name)));
+    return native.at(-1)?.names.includes("last") ? native : null;
+  }
+  function classifyCell(cell) {
+    if (!cell) return "other";
+    if (cell.querySelector('a[href*="/album/"], a[href^="spotify:album:"]')) return "album";
+    if (cell.querySelector('a[href*="/user/"], a[href^="spotify:user:"]')) return "addedBy";
+    const text = cell.textContent?.trim() ?? "";
+    if (/^[\d.,\s  ]+$/.test(text)) return "plays";
+    if (text && !cell.querySelector("a, button, input")) return "date";
+    return "other";
+  }
+  function classifyColumns(tracks, cells) {
+    return tracks.map((track, index) => {
+      if (track.names.includes("index")) return "index";
+      if (track.names.includes("first")) return "title";
+      if (track.names.includes("last")) return "last";
+      return classifyCell(cells[index]);
+    });
+  }
+  function buildTemplate(tracks, kinds, options) {
+    return tracks.map((track, index) => {
+      const size = options.tidy && TIDY_SIZES[kinds[index]] || track.size;
+      const column = `${track.names.length ? `[${track.names.join(" ")}] ` : ""}${size}`;
+      if (kinds[index] !== "last") return column;
+      const tagifyWidth = options.tidy && options.tagifyWidth ? `${options.tagifyWidth}px` : TAGIFY_DEFAULT_WIDTH;
+      const tagify = options.tagify ? ` [${TAGIFY_COLUMN_NAME}] ${tagifyWidth}` : "";
+      return `[${COLUMN_NAME}] var(${WIDTH_VAR}, 0px)${tagify} ${column}`;
+    }).join(" ");
   }
 
   // src/playlist.ts
@@ -385,11 +615,14 @@
   }
 
   // src/index.ts
+  var VERSION = "0.3.0";
   var PREFIX = "spicetify-playlist-labels:";
   var SIZE_VAR = "--spicetify-playlist-labels-size";
   var GAP = 6;
-  var OVERFLOW_WIDTH = 14 + GAP;
+  var MORE_WIDTH = 24 + GAP;
   var LIKED_SONGS_PATH = "/collection/tracks";
+  var LABEL_CLASS = "spicetify-playlist-labels-label";
+  var MENU_CLASS = "spicetify-playlist-labels-menu";
   function readSetting(key, fallback) {
     try {
       const value = localStorage.getItem(PREFIX + key);
@@ -399,15 +632,23 @@
     }
   }
   function writeSetting(key, value) {
-    localStorage.setItem(PREFIX + key, JSON.stringify(value));
+    try {
+      localStorage.setItem(PREFIX + key, JSON.stringify(value));
+    } catch (error) {
+      console.warn("[playlist-labels] could not save setting", key, error);
+    }
   }
   var settings = {
     showAllPlaylists: readSetting("show-all", false),
     showOnArtistPages: readSetting("show-on-artist-pages", true),
+    // Rebalance Spotify's column widths around the title (see layout.ts).
+    tidyColumns: readSetting("tidy-columns", true),
     // Share of the track list width the label column may take. Keeps the
-    // title/album columns readable when the right panel is open.
+    // title readable when the right panel is open or on artist pages.
     maxWidthRatio: readSetting("max-width-ratio", 0.2),
-    maxLabels: readSetting("max-labels", 20)
+    maxLabels: readSetting("max-labels", 20),
+    // Width given to Tagify's rating column while tidying (Tagify uses 150px).
+    tagifyWidth: readSetting("tagify-width", 112)
   };
   var trackUriToPlaylistData = {};
   var dataVersion = 0;
@@ -424,6 +665,15 @@
   }
   function getLabels(trackUri, path) {
     return (trackUriToPlaylistData[trackUri] ?? []).filter((playlistData) => (settings.showAllPlaylists || playlistData.isOwnPlaylist) && playlistPath(playlistData) !== path);
+  }
+  function openPlaylist(playlistData, trackUri) {
+    const path = playlistPath(playlistData);
+    highlight = { trackUri, path, until: Date.now() + 1e4 };
+    Spicetify.Platform.History.push({ pathname: path, search: `?uid=${playlistData.trackUid}` });
+  }
+  function refresh() {
+    dataVersion++;
+    schedule();
   }
   function schedule() {
     if (scheduledFrame) return;
@@ -451,10 +701,10 @@
         if (uri) tracks.push({ row, uri });
       }
       if (tracks.length === 0) continue;
-      const stateKey = `${path}|${dataVersion}|${settings.showAllPlaylists}`;
+      const stateKey = `${path}|${dataVersion}|${settings.showAllPlaylists}|${settings.tidyColumns}`;
       let state = gridStates.get(grid);
       if (!state || state.key !== stateKey) {
-        state = { key: stateKey, maxCount: 0, visibleCount: 0 };
+        state = { key: stateKey, maxCount: 0, visibleCount: 0, columns: null };
         gridStates.set(grid, state);
       }
       const rows = tracks.map(({ row, uri }) => {
@@ -463,9 +713,8 @@
         return { row, uri, labels };
       });
       updateWidth(grid, state, tracks[0].row);
-      if (header) ensureCell(header, createHeaderCell);
       for (const { row, uri, labels } of rows) {
-        const cell = ensureCell(row, createRowCell);
+        const cell = ensureCell(row, state, createRowCell);
         if (cell) renderCell(cell, uri, labels, state.visibleCount, stateKey);
         if (highlight && highlight.trackUri === uri && highlight.path === path) {
           highlight = null;
@@ -473,17 +722,18 @@
           row.click();
         }
       }
+      if (header) ensureCell(header, state, createHeaderCell);
     }
     if (highlight && Date.now() > highlight.until) highlight = null;
   }
   function updateWidth(grid, state, sampleRow) {
     const rowHeight = sampleRow.getBoundingClientRect().height || 56;
-    const size = Math.round(Math.min(32, Math.max(16, rowHeight * 0.5)));
+    const size = Math.round(Math.min(40, Math.max(16, rowHeight - 16)));
     const available = grid.getBoundingClientRect().width * settings.maxWidthRatio;
-    const fit = Math.max(1, Math.floor((available - OVERFLOW_WIDTH + GAP) / (size + GAP)));
+    const fit = Math.max(1, Math.floor((available - MORE_WIDTH + GAP) / (size + GAP)));
     const count = Math.min(state.maxCount, fit, settings.maxLabels);
     const overflow = state.maxCount > count;
-    const width = count === 0 ? 0 : count * size + (count - 1) * GAP + (overflow ? OVERFLOW_WIDTH : 0);
+    const width = count === 0 ? 0 : count * size + (count - 1) * GAP + (overflow ? MORE_WIDTH : 0);
     state.visibleCount = count;
     setStyle(grid, WIDTH_VAR, `${width}px`);
     setStyle(grid, SIZE_VAR, `${size}px`);
@@ -491,12 +741,13 @@
   function setStyle(element, property, value) {
     if (element.style.getPropertyValue(property) !== value) element.style.setProperty(property, value);
   }
-  function ensureCell(row, create) {
+  function ensureCell(row, state, create) {
     const layout = getRowLayout(row);
     if (!layout) return null;
     const className = isHeaderRow(row) ? HEADER_CLASS : CELL_CLASS;
     let cell = Array.from(row.getElementsByClassName(className)).find((candidate) => candidate.closest('[role="row"]') === row) ?? null;
     if (cell && cell.parentElement !== layout.container) {
+      destroyTooltips(cell);
       cell.remove();
       cell = null;
     }
@@ -504,16 +755,33 @@
       cell = create();
       insertCell(layout, cell);
     }
-    ensureTemplate(layout);
+    applyTemplate(layout, state, isHeaderRow(row));
     return cell;
+  }
+  function applyTemplate(layout, state, isHeader) {
+    const native = getNativeTemplate(layout.container);
+    if (!state.columns || state.columns.template !== native) {
+      const tracks = parseTemplate(native);
+      state.columns = tracks && !isHeader && tracks.length === layout.nativeCells.length ? { template: native, tracks, kinds: classifyColumns(tracks, layout.nativeCells) } : state.columns;
+    }
+    const columns = state.columns;
+    if (!columns || columns.tracks.length !== layout.nativeCells.length) {
+      ensureTemplate(layout);
+      return;
+    }
+    setTemplate(layout.container, buildTemplate(columns.tracks, columns.kinds, {
+      tidy: settings.tidyColumns,
+      tagify: layout.tagify != null,
+      tagifyWidth: settings.tagifyWidth
+    }));
   }
   function createHeaderCell() {
     const cell = document.createElement("div");
     cell.className = HEADER_CLASS;
     cell.setAttribute("role", "columnheader");
-    cell.title = "Playlists";
-    const icon = Spicetify.SVGIcons?.playlist;
-    if (icon) cell.innerHTML = `<svg role="img" height="16" width="16" viewBox="0 0 16 16" fill="currentColor">${icon}</svg>`;
+    const text = document.createElement("span");
+    text.textContent = "Labels";
+    cell.append(text);
     return cell;
   }
   function createRowCell() {
@@ -522,7 +790,7 @@
     cell.setAttribute("role", "gridcell");
     for (const type of ["dblclick", "mousedown"]) {
       cell.addEventListener(type, (event) => {
-        if (event.target.closest(".spicetify-playlist-labels-label")) event.stopPropagation();
+        if (event.target.closest("button")) event.stopPropagation();
       });
     }
     return cell;
@@ -533,16 +801,37 @@
     cell.dataset.renderKey = renderKey;
     const container = document.createElement("div");
     container.className = "spicetify-playlist-labels-labels";
-    if (labels.length > visibleCount) container.classList.add("spicetify-playlist-labels-overflow");
     for (const playlistData of labels.slice(0, visibleCount)) {
       container.append(createLabel(playlistData, trackUri));
     }
+    const hiddenLabels = labels.slice(visibleCount);
+    if (visibleCount > 0 && hiddenLabels.length > 0) container.append(createMoreButton(hiddenLabels, trackUri));
+    destroyTooltips(cell);
     cell.replaceChildren(container);
   }
   function createLabel(playlistData, trackUri) {
-    const label = document.createElement("div");
-    label.className = "spicetify-playlist-labels-label";
+    const label = document.createElement("button");
+    label.type = "button";
+    label.className = LABEL_CLASS;
+    label.setAttribute("aria-label", playlistData.name);
     if (playlistData.isLikedTracks) label.classList.add("spicetify-playlist-labels-liked");
+    label.append(createCover(playlistData));
+    addTooltip(label, playlistData.name);
+    label.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openPlaylist(playlistData, trackUri);
+    });
+    label.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      showMenu(menuPosition(event, label), playlistMenuItems(playlistData, trackUri));
+    });
+    return label;
+  }
+  function createCover(playlistData) {
+    const cover = document.createElement("span");
+    cover.className = "spicetify-playlist-labels-cover";
+    if (playlistData.isLikedTracks) cover.classList.add("spicetify-playlist-labels-liked");
     if (playlistData.image) {
       const image = document.createElement("img");
       image.src = playlistData.image;
@@ -550,23 +839,48 @@
       image.loading = "lazy";
       image.draggable = false;
       image.addEventListener("error", () => image.remove());
-      label.append(image);
+      cover.append(image);
     }
-    addTooltip(label, playlistData.name);
-    label.addEventListener("click", (event) => {
+    return cover;
+  }
+  function createMoreButton(hiddenLabels, trackUri) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "spicetify-playlist-labels-more";
+    button.textContent = `+${hiddenLabels.length}`;
+    const description = `${hiddenLabels.length} more playlist${hiddenLabels.length === 1 ? "" : "s"}`;
+    button.setAttribute("aria-label", description);
+    addTooltip(button, description);
+    button.addEventListener("click", (event) => {
       event.stopPropagation();
-      const path = playlistPath(playlistData);
-      highlight = { trackUri, path, until: Date.now() + 1e4 };
-      Spicetify.Platform.History.push({ pathname: path, search: `?uid=${playlistData.trackUid}` });
+      showMenu(menuPosition(event, button), hiddenLabels.map((playlistData) => ({
+        label: playlistData.name,
+        cover: playlistData,
+        onClick: () => openPlaylist(playlistData, trackUri)
+      })));
     });
+    return button;
+  }
+  function playlistMenuItems(playlistData, trackUri) {
+    const items = [{ label: `Open ${playlistData.name}`, onClick: () => openPlaylist(playlistData, trackUri) }];
     if (!playlistData.isLikedTracks) {
-      label.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        showRemoveMenu(event, playlistData, trackUri);
+      items.push({
+        label: `Remove from ${playlistData.name}`,
+        onClick: () => removeFromPlaylist(playlistData, trackUri)
       });
     }
-    return label;
+    return items;
+  }
+  async function removeFromPlaylist(playlistData, trackUri) {
+    try {
+      await removeTrackFromPlaylist(playlistData.uri, trackUri, playlistData.trackUid);
+      trackUriToPlaylistData[trackUri] = (trackUriToPlaylistData[trackUri] ?? []).filter((other) => other.uri !== playlistData.uri);
+      refresh();
+      Spicetify.showNotification(`Removed from ${playlistData.name}`);
+    } catch (error) {
+      console.error("[playlist-labels] remove failed", error);
+      Spicetify.showNotification(`Could not remove from ${playlistData.name}`, true);
+    }
   }
   function addTooltip(element, text) {
     if (typeof Spicetify.Tippy === "function") {
@@ -578,60 +892,79 @@
     }
     element.title = text;
   }
-  function showRemoveMenu(event, playlistData, trackUri) {
-    document.querySelector(".spicetify-playlist-labels-menu")?.remove();
+  function destroyTooltips(root) {
+    root.querySelectorAll("button").forEach((element) => element._tippy?.destroy());
+  }
+  function menuPosition(event, element) {
+    if (event.clientX || event.clientY) return { x: event.clientX, y: event.clientY };
+    const rect = element.getBoundingClientRect();
+    return { x: rect.left, y: rect.bottom + 4 };
+  }
+  function showMenu(position, items) {
+    document.querySelector(`.${MENU_CLASS}`)?.remove();
     const menu = document.createElement("div");
-    menu.className = "spicetify-playlist-labels-menu";
-    menu.style.left = `${event.clientX}px`;
-    menu.style.top = `${event.clientY}px`;
-    const button = document.createElement("button");
-    button.textContent = `Remove from ${playlistData.name}`;
-    button.addEventListener("click", async (clickEvent) => {
-      clickEvent.stopPropagation();
+    menu.className = MENU_CLASS;
+    menu.setAttribute("role", "menu");
+    menu.style.left = `${position.x}px`;
+    menu.style.top = `${position.y}px`;
+    const close = () => {
       menu.remove();
-      try {
-        await removeTrackFromPlaylist(playlistData.uri, trackUri, playlistData.trackUid);
-        trackUriToPlaylistData[trackUri] = (trackUriToPlaylistData[trackUri] ?? []).filter((other) => other.uri !== playlistData.uri);
-        dataVersion++;
-        schedule();
-        Spicetify.showNotification(`Removed from ${playlistData.name}`);
-      } catch (error) {
-        console.error("[playlist-labels] remove failed", error);
-        Spicetify.showNotification(`Could not remove from ${playlistData.name}`, true);
-      }
+      document.removeEventListener("mousedown", onOutside, true);
+      document.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("blur", close);
+      window.removeEventListener("resize", close);
+    };
+    const onOutside = (event) => {
+      if (!(event.target instanceof Node && menu.contains(event.target))) close();
+    };
+    const buttons = items.map((item) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("role", "menuitem");
+      if (item.cover) button.append(createCover(item.cover));
+      const text = document.createElement("span");
+      text.textContent = item.label;
+      button.append(text);
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        close();
+        item.onClick();
+      });
+      menu.append(button);
+      return button;
     });
-    menu.append(button);
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        close();
+      } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const index = buttons.indexOf(document.activeElement);
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        buttons[(index + step + buttons.length) % buttons.length]?.focus();
+      }
+    };
     document.body.append(menu);
     const rect = menu.getBoundingClientRect();
-    if (rect.right > window.innerWidth) menu.style.left = `${window.innerWidth - rect.width - 8}px`;
-    if (rect.bottom > window.innerHeight) menu.style.top = `${window.innerHeight - rect.height - 8}px`;
-    const close = (closeEvent) => {
-      if (closeEvent instanceof KeyboardEvent && closeEvent.key !== "Escape") return;
-      if (closeEvent.target instanceof Node && menu.contains(closeEvent.target)) return;
-      menu.remove();
-      document.removeEventListener("mousedown", close, true);
-      document.removeEventListener("keydown", close, true);
-      window.removeEventListener("blur", close);
-    };
-    document.addEventListener("mousedown", close, true);
-    document.addEventListener("keydown", close, true);
+    if (rect.right > window.innerWidth) menu.style.left = `${Math.max(8, window.innerWidth - rect.width - 8)}px`;
+    if (rect.bottom > window.innerHeight) menu.style.top = `${Math.max(8, window.innerHeight - rect.height - 8)}px`;
+    buttons[0]?.focus({ preventScroll: true });
+    document.addEventListener("mousedown", onOutside, true);
+    document.addEventListener("keydown", onKey, true);
     window.addEventListener("blur", close);
-  }
-  function queueUpdate(load) {
-    const promise = updatePromise.catch(() => void 0).then(load);
-    updatePromise = promise;
-    setData(promise);
-    return promise;
+    window.addEventListener("resize", close);
   }
   function describeError(error) {
     return error instanceof Event ? error.target?.error ?? error.type : error;
   }
-  function setData(promise) {
+  function queueUpdate(load) {
+    const promise = updatePromise.catch(() => void 0).then(load);
+    updatePromise = promise;
     promise.then((data) => {
       trackUriToPlaylistData = data;
-      dataVersion++;
-      schedule();
+      refresh();
     }).catch((error) => console.error("[playlist-labels] could not update playlist data", describeError(error)));
+    return promise;
   }
   function addListener(api, event, listener) {
     try {
@@ -640,43 +973,55 @@
       console.warn(`[playlist-labels] could not listen to ${event}`, error);
     }
   }
+  function debounce(callback, delay) {
+    let timer = 0;
+    return () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(callback, delay);
+    };
+  }
   function registerMenu() {
     let showAllItem = null;
+    const toggleShowAll = () => {
+      settings.showAllPlaylists = !settings.showAllPlaylists;
+      writeSetting("show-all", settings.showAllPlaylists);
+      if (playbarButton) playbarButton.active = settings.showAllPlaylists;
+      if (showAllItem) showAllItem.isEnabled = settings.showAllPlaylists;
+      refresh();
+    };
     const playbarButton = Spicetify.Playbar?.Button ? new Spicetify.Playbar.Button(
       "Show All Saved Playlists",
       `<svg role="img" height="16" width="16" viewBox="0 0 16 16" fill="currentColor">${Spicetify.SVGIcons?.spotify ?? ""}</svg>`,
-      (button) => toggleShowAll(button),
+      toggleShowAll,
       false,
       settings.showAllPlaylists
     ) : null;
-    const toggleShowAll = (button = playbarButton) => {
-      settings.showAllPlaylists = !settings.showAllPlaylists;
-      writeSetting("show-all", settings.showAllPlaylists);
-      if (button) button.active = settings.showAllPlaylists;
-      if (showAllItem) showAllItem.isEnabled = settings.showAllPlaylists;
-      schedule();
-    };
     if (!Spicetify.Menu?.SubMenu) return;
-    showAllItem = new Spicetify.Menu.Item("Show all saved playlists", settings.showAllPlaylists, () => toggleShowAll());
-    const artistItem = new Spicetify.Menu.Item("Show on artist pages", settings.showOnArtistPages, (item) => {
-      settings.showOnArtistPages = item.isEnabled = !settings.showOnArtistPages;
-      writeSetting("show-on-artist-pages", settings.showOnArtistPages);
-      dataVersion++;
-      schedule();
+    const toggle = (label, key, setting) => new Spicetify.Menu.Item(label, settings[setting], (item) => {
+      settings[setting] = item.isEnabled = !settings[setting];
+      writeSetting(key, settings[setting]);
+      refresh();
     });
+    showAllItem = new Spicetify.Menu.Item("Show all saved playlists", settings.showAllPlaylists, toggleShowAll);
     const rebuildItem = new Spicetify.Menu.Item("Rebuild cache", false, async () => {
       Spicetify.showNotification("Playlist Labels: rebuilding cache\u2026");
       await clearCache();
       queueUpdate(getTrackUriToPlaylistData).then(() => Spicetify.showNotification("Playlist Labels: cache rebuilt")).catch(() => Spicetify.showNotification("Playlist Labels: could not rebuild cache", true));
     });
-    new Spicetify.Menu.SubMenu("Playlist Labels", [showAllItem, artistItem, rebuildItem]).register();
+    new Spicetify.Menu.SubMenu("Playlist Labels", [
+      showAllItem,
+      toggle("Show on artist pages", "show-on-artist-pages", "showOnArtistPages"),
+      toggle("Tidy column widths", "tidy-columns", "tidyColumns"),
+      rebuildItem
+    ]).register();
   }
   function debug() {
-    const grids = getTracklists();
     return {
+      version: VERSION,
       spotify: Spicetify.Platform?.version,
+      settings,
       tracksWithData: Object.keys(trackUriToPlaylistData).length,
-      grids: grids.map((grid) => {
+      grids: getTracklists().map((grid) => {
         const rows = getRows(grid);
         const sample = rows.find((row) => !isHeaderRow(row) && getRowUri(row));
         const layout = sample ? getRowLayout(sample) : null;
@@ -685,8 +1030,10 @@
           trackRows: rows.filter((row) => getRowUri(row)).length,
           hasHeader: rows.some(isHeaderRow),
           width: grid.style.getPropertyValue(WIDTH_VAR),
+          columns: gridStates.get(grid)?.columns?.kinds ?? null,
           sampleUri: sample ? getRowUri(sample) : null,
           sampleLabels: sample ? getLabels(getRowUri(sample), currentPath()).map((label) => label.name) : null,
+          nativeTemplate: layout ? getNativeTemplate(layout.container) : null,
           template: layout?.container.style.getPropertyValue("grid-template-columns") || null
         };
       })
@@ -700,7 +1047,7 @@
     style.id = "spicetify-playlist-labels-style";
     style.textContent = style_default;
     document.head.append(style);
-    window.PlaylistLabels = { debug };
+    window.PlaylistLabels = { version: VERSION, debug };
     registerMenu();
     const mainView = document.querySelector(".Root__main-view") ?? document.body;
     new MutationObserver(schedule).observe(mainView, { childList: true, subtree: true });
@@ -711,10 +1058,12 @@
       const uri = event?.data?.uri;
       if (uri) queueUpdate(() => updatePlaylistData(uri));
     });
+    addListener(Spicetify.Platform.RootlistAPI, "update", debounce(() => queueUpdate(getTrackUriToPlaylistData), 2e3));
     queueUpdate(getTrackUriToPlaylistData).catch((error) => {
-      console.error("[playlist-labels] could not load playlists", describeError(error));
       Spicetify.showNotification("Playlist Labels: could not load your playlists (see DevTools console)", true);
+      console.error("[playlist-labels] could not load playlists", describeError(error));
     });
+    console.info(`[playlist-labels] v${VERSION} loaded`);
   }
   main();
 })();

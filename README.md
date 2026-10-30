@@ -6,13 +6,17 @@ Adds playlist labels to your tracklist indicating the playlists in which a track
 
 ## About this fork
 
-The original project is archived. This fork updates it for **Spotify 1.3.x** (tested layout-wise against 1.3.6), where the legacy `main-trackList-*` class names are gone:
+The original project is archived. This fork updates it for **Spotify 1.3.x** (used daily on 1.3.6), where the legacy `main-trackList-*` class names are gone:
 
 - Track rows are found through ARIA roles (`role="grid"`, `role="row"`, `aria-colindex`), and track URIs are read by walking the row's React fiber parents instead of a fixed props path.
-- Labels live in their **own column** with a header. The column is added to each row's existing `grid-template-columns`, so it works with any number of columns (artist pages, "Added by" on collaborative playlists, columns added by other extensions).
-- **Tagify compatible**: the label column always sits right before Tagify's rating column, whichever extension loads first.
-- The column width comes from the real width of the track list (by default at most 20% of it), so it adapts when the right panel opens or closes. Labels that don't fit collapse into `⋯`.
-- No React rendering (plain DOM), so it doesn't depend on Spotify's React version.
+- Labels live in their own **Labels** column, with covers the same size as the track's own cover art.
+- **Tidy column widths**: Spotify's columns are recognised by their content (album link, "added by" user link, play count, date), so it works in any language, and resized so the title keeps most of the room: date added, play count, Tagify and duration get fixed widths, album and "added by" shrink.
+- **Tagify compatible**: the order is always `… | Date added | Labels | Tagify | duration`, whichever extension loads first.
+- The label column takes at most 20% of the track list width, so it adapts when the right panel opens and on narrower artist pages. Playlists that don't fit go behind a `+N` button that lists them.
+- Right-click a label to open the playlist or remove the track from it. Labels are keyboard accessible buttons.
+- Labels update when tracks are added or removed and when playlists are created, deleted or renamed.
+- The IndexedDB cache is optional: if it breaks, it is recreated, or skipped.
+- Plain DOM rendering, so it doesn't depend on Spotify's React version.
 
 ## Install
 
@@ -31,6 +35,7 @@ From the profile menu, **Playlist Labels**:
 
 - **Show all saved playlists**: also show playlists you follow but don't own (the playbar button does the same).
 - **Show on artist pages**
+- **Tidy column widths**: turn off to keep Spotify's own column widths and only add the Labels column.
 - **Rebuild cache**: reloads every playlist from scratch.
 
 Advanced settings, set from DevTools (`spicetify enable-devtools`) and applied after a reload (Ctrl+Shift+R):
@@ -38,7 +43,8 @@ Advanced settings, set from DevTools (`spicetify enable-devtools`) and applied a
 ```js
 localStorage.setItem('spicetify-playlist-labels:max-width-ratio', '0.25') // largest share of the track list width the column may take (default 0.2)
 localStorage.setItem('spicetify-playlist-labels:max-labels', '10')        // maximum number of labels per row (default 20)
-localStorage.setItem('spicetify-playlist-labels:rated-folder', 'Rated')   // labels for playlists in this folder sit closest to the rating column
+localStorage.setItem('spicetify-playlist-labels:tagify-width', '112')     // Tagify column width in px while tidying (default 112, Tagify's own is 150)
+localStorage.setItem('spicetify-playlist-labels:rated-folder', 'Rated')   // labels for playlists in this folder come first
 ```
 
 ## Troubleshooting

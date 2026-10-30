@@ -59,6 +59,11 @@
     transition: transform 120ms ease, opacity 120ms ease;
 }
 
+/* Dim the other labels so it's clear which one the tooltip belongs to. */
+.spicetify-playlist-labels-labels:hover .spicetify-playlist-labels-label:not(:hover) .spicetify-playlist-labels-cover {
+    opacity: 0.45;
+}
+
 .spicetify-playlist-labels-label:hover .spicetify-playlist-labels-cover {
     transform: translateY(-1px) scale(1.06);
 }
@@ -135,8 +140,41 @@
     background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));
 }
 
+/* Solid, high-contrast tooltip in Spotify's own style. */
+.spicetify-playlist-labels-tooltip {
+    position: fixed;
+    z-index: 10000;
+    display: none;
+    max-width: 280px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background-color: var(--background-elevated-base, #282828);
+    color: var(--text-base, #fff);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    translate: 0 3px;
+    transition: opacity 120ms ease, translate 120ms ease;
+}
+
+.spicetify-playlist-labels-tooltip[data-placement="bottom"] {
+    translate: 0 -3px;
+}
+
+.spicetify-playlist-labels-tooltip.spicetify-playlist-labels-tooltip-visible {
+    opacity: 1;
+    translate: 0 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .spicetify-playlist-labels-label .spicetify-playlist-labels-cover {
+    .spicetify-playlist-labels-label .spicetify-playlist-labels-cover,
+    .spicetify-playlist-labels-tooltip {
         transition: none;
     }
 }

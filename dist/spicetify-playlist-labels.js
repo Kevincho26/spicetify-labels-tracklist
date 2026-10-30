@@ -62,6 +62,11 @@
     transition: transform 120ms ease, opacity 120ms ease;
 }
 
+/* Dim the other labels so it's clear which one the tooltip belongs to. */
+.spicetify-playlist-labels-labels:hover .spicetify-playlist-labels-label:not(:hover) .spicetify-playlist-labels-cover {
+    opacity: 0.45;
+}
+
 .spicetify-playlist-labels-label:hover .spicetify-playlist-labels-cover {
     transform: translateY(-1px) scale(1.06);
 }
@@ -138,8 +143,41 @@
     background-color: var(--background-tinted-highlight, rgba(255, 255, 255, 0.1));
 }
 
+/* Solid, high-contrast tooltip in Spotify's own style. */
+.spicetify-playlist-labels-tooltip {
+    position: fixed;
+    z-index: 10000;
+    display: none;
+    max-width: 280px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background-color: var(--background-elevated-base, #282828);
+    color: var(--text-base, #fff);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    translate: 0 3px;
+    transition: opacity 120ms ease, translate 120ms ease;
+}
+
+.spicetify-playlist-labels-tooltip[data-placement="bottom"] {
+    translate: 0 -3px;
+}
+
+.spicetify-playlist-labels-tooltip.spicetify-playlist-labels-tooltip-visible {
+    opacity: 1;
+    translate: 0 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .spicetify-playlist-labels-label .spicetify-playlist-labels-cover {
+    .spicetify-playlist-labels-label .spicetify-playlist-labels-cover,
+    .spicetify-playlist-labels-tooltip {
         transition: none;
     }
 }
@@ -232,14 +270,14 @@
     return { container, cells: siblings, nativeCells, tagify: neighbour ?? null, anchor: neighbour ?? last };
   }
   function insertCell(layout, cell) {
-    const { container, cells, anchor } = layout;
-    const index = Number(anchor.getAttribute("aria-colindex")) || cells.indexOf(anchor) + 1;
+    const { container, cells, anchor: anchor2 } = layout;
+    const index = Number(anchor2.getAttribute("aria-colindex")) || cells.indexOf(anchor2) + 1;
     cell.setAttribute("aria-colindex", String(index));
-    for (const other of cells.slice(cells.indexOf(anchor))) {
+    for (const other of cells.slice(cells.indexOf(anchor2))) {
       const otherIndex = Number(other.getAttribute("aria-colindex"));
       if (otherIndex >= index) other.setAttribute("aria-colindex", String(otherIndex + 1));
     }
-    container.insertBefore(cell, anchor);
+    container.insertBefore(cell, anchor2);
   }
   var appliedTemplates = /* @__PURE__ */ new WeakMap();
   function setTemplate(container, template) {
@@ -271,12 +309,12 @@
     return true;
   }
   function buildTemplateFromComputed(layout, track) {
-    const { container, cells, anchor } = layout;
+    const { container, cells, anchor: anchor2 } = layout;
     const computed = getComputedStyle(container).getPropertyValue("grid-template-columns");
     const tokens = computed.match(/\[[^\]]*\]|[^\s\[]+/g) ?? [];
     const sizes = tokens.filter((token) => !token.startsWith("["));
     if (sizes.length !== cells.length) return null;
-    const insertAt = cells.indexOf(anchor);
+    const insertAt = cells.indexOf(anchor2);
     const parts = sizes.map((size, index) => {
       const px = parseFloat(size);
       if (!Number.isFinite(px) || px <= 64) return size;
@@ -354,6 +392,98 @@
       const tagify = options.tagify ? ` [${TAGIFY_COLUMN_NAME}] ${tagifyWidth}` : "";
       return `[${COLUMN_NAME}] var(${WIDTH_VAR}, 0px)${tagify} ${column}`;
     }).join(" ");
+  }
+
+  // src/tooltip.ts
+  var ATTRIBUTE = "data-spicetify-playlist-labels-tooltip";
+  var SHOW_DELAY = 350;
+  var SKIP_DELAY_WINDOW = 500;
+  var OFFSET = 8;
+  var MARGIN = 8;
+  var tooltip = null;
+  var anchor = null;
+  var showTimer = 0;
+  var lastVisibleAt = 0;
+  function setTooltip(element, text) {
+    element.setAttribute(ATTRIBUTE, text);
+  }
+  function getTooltip() {
+    if (!tooltip) {
+      tooltip = document.createElement("div");
+      tooltip.className = "spicetify-playlist-labels-tooltip";
+      tooltip.setAttribute("role", "tooltip");
+      tooltip.setAttribute("aria-hidden", "true");
+      document.body.append(tooltip);
+    }
+    return tooltip;
+  }
+  function show(element) {
+    if (!element.isConnected) return;
+    const box = getTooltip();
+    box.textContent = element.getAttribute(ATTRIBUTE);
+    box.classList.remove("spicetify-playlist-labels-tooltip-visible");
+    box.style.display = "block";
+    const target = element.getBoundingClientRect();
+    const size = box.getBoundingClientRect();
+    let top = target.top - size.height - OFFSET;
+    let placement = "top";
+    if (top < MARGIN) {
+      top = target.bottom + OFFSET;
+      placement = "bottom";
+    }
+    const left = Math.min(
+      Math.max(MARGIN, target.left + target.width / 2 - size.width / 2),
+      window.innerWidth - size.width - MARGIN
+    );
+    box.style.left = `${Math.round(left)}px`;
+    box.style.top = `${Math.round(top)}px`;
+    box.dataset.placement = placement;
+    requestAnimationFrame(() => {
+      if (anchor === element) box.classList.add("spicetify-playlist-labels-tooltip-visible");
+    });
+  }
+  function scheduleShow(element) {
+    clearTimeout(showTimer);
+    anchor = element;
+    const delay = Date.now() - lastVisibleAt < SKIP_DELAY_WINDOW ? 0 : SHOW_DELAY;
+    showTimer = window.setTimeout(() => show(element), delay);
+  }
+  function hideTooltip() {
+    clearTimeout(showTimer);
+    if (anchor && tooltip?.classList.contains("spicetify-playlist-labels-tooltip-visible")) lastVisibleAt = Date.now();
+    anchor = null;
+    if (!tooltip) return;
+    tooltip.classList.remove("spicetify-playlist-labels-tooltip-visible");
+    tooltip.style.display = "none";
+  }
+  function tooltipTarget(target) {
+    return target instanceof Element ? target.closest(`[${ATTRIBUTE}]`) : null;
+  }
+  function installTooltips() {
+    document.addEventListener("pointerover", (event) => {
+      const element = tooltipTarget(event.target);
+      if (element && element !== anchor) scheduleShow(element);
+    });
+    document.addEventListener("pointerout", (event) => {
+      if (!anchor) return;
+      const next = event.relatedTarget;
+      if (!(next instanceof Node && anchor.contains(next))) hideTooltip();
+    });
+    document.addEventListener("focusin", (event) => {
+      const element = tooltipTarget(event.target);
+      if (element?.matches(":focus-visible")) scheduleShow(element);
+    });
+    document.addEventListener("focusout", () => hideTooltip());
+    document.addEventListener("pointerdown", () => hideTooltip(), true);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") hideTooltip();
+    }, true);
+    document.addEventListener("scroll", () => hideTooltip(), true);
+    document.addEventListener("wheel", () => hideTooltip(), { capture: true, passive: true });
+    window.addEventListener("blur", () => hideTooltip());
+  }
+  function hideDetachedTooltip() {
+    if (anchor && !anchor.isConnected) hideTooltip();
   }
 
   // src/playlist.ts
@@ -610,7 +740,7 @@
   }
 
   // src/index.ts
-  var VERSION = "0.3.1";
+  var VERSION = "0.3.2";
   var PREFIX = "spicetify-playlist-labels:";
   var SIZE_VAR = "--spicetify-playlist-labels-size";
   var GAP = 6;
@@ -722,6 +852,7 @@
       if (header) ensureCell(header, state, createHeaderCell);
     }
     if (highlight && Date.now() > highlight.until) highlight = null;
+    hideDetachedTooltip();
   }
   function updateWidth(grid, state, sampleRow) {
     const size = Math.round(Math.min(48, Math.max(16, getTrackCoverSize(sampleRow) * settings.coverScale)));
@@ -749,7 +880,6 @@
     const className = isHeaderRow(row) ? HEADER_CLASS : CELL_CLASS;
     let cell = Array.from(row.getElementsByClassName(className)).find((candidate) => candidate.closest('[role="row"]') === row) ?? null;
     if (cell && cell.parentElement !== layout.container) {
-      destroyTooltips(cell);
       cell.remove();
       cell = null;
     }
@@ -808,7 +938,6 @@
     }
     const hiddenLabels = labels.slice(visibleCount);
     if (visibleCount > 0 && hiddenLabels.length > 0) container.append(createMoreButton(hiddenLabels, trackUri));
-    destroyTooltips(cell);
     cell.replaceChildren(container);
   }
   function createLabel(playlistData, trackUri) {
@@ -818,7 +947,7 @@
     label.setAttribute("aria-label", playlistData.name);
     if (playlistData.isLikedTracks) label.classList.add("spicetify-playlist-labels-liked");
     label.append(createCover(playlistData));
-    addTooltip(label, playlistData.name);
+    setTooltip(label, playlistData.name);
     label.addEventListener("click", (event) => {
       event.stopPropagation();
       openPlaylist(playlistData, trackUri);
@@ -852,7 +981,7 @@
     button.textContent = `+${hiddenLabels.length}`;
     const description = `${hiddenLabels.length} more playlist${hiddenLabels.length === 1 ? "" : "s"}`;
     button.setAttribute("aria-label", description);
-    addTooltip(button, description);
+    setTooltip(button, description);
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       showMenu(menuPosition(event, button), hiddenLabels.map((playlistData) => ({
@@ -883,19 +1012,6 @@
       console.error("[playlist-labels] remove failed", error);
       Spicetify.showNotification(`Could not remove from ${playlistData.name}`, true);
     }
-  }
-  function addTooltip(element, text) {
-    if (typeof Spicetify.Tippy === "function") {
-      try {
-        Spicetify.Tippy(element, { ...Spicetify.TippyProps, content: text, delay: [200, 0] });
-        return;
-      } catch {
-      }
-    }
-    element.title = text;
-  }
-  function destroyTooltips(root) {
-    root.querySelectorAll("button").forEach((element) => element._tippy?.destroy());
   }
   function menuPosition(event, element) {
     if (event.clientX || event.clientY) return { x: event.clientX, y: event.clientY };
@@ -1050,6 +1166,7 @@
     style.textContent = style_default;
     document.head.append(style);
     window.PlaylistLabels = { version: VERSION, debug };
+    installTooltips();
     registerMenu();
     const mainView = document.querySelector(".Root__main-view") ?? document.body;
     new MutationObserver(schedule).observe(mainView, { childList: true, subtree: true });

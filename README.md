@@ -13,6 +13,7 @@ The original project is archived. This fork updates it for **Spotify 1.3.x** (us
 - **Tidy column widths**: Spotify's columns are recognised by their content (album link, "added by" user link, play count, date), so it works in any language, and resized so the title keeps most of the room: date added, play count, Tagify and duration get fixed widths, album and "added by" shrink.
 - **Tagify compatible**: the order is always `… | Date added | Labels | Tagify | duration`, whichever extension loads first.
 - The label column takes at most 20% of the track list width, so it adapts when the right panel opens and on narrower artist pages. Playlists that don't fit go behind a `+N` button that lists them.
+- Hovering a label shows the playlist name in a solid, readable tooltip and dims the other labels in the row.
 - Right-click a label to open the playlist or remove the track from it. Labels are keyboard accessible buttons.
 - Labels update when tracks are added or removed and when playlists are created, deleted or renamed.
 - The IndexedDB cache is optional: if it breaks, it is recreated, or skipped.

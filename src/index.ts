@@ -2,9 +2,10 @@ import css from './style.css';
 import { removeTrackFromPlaylist } from './api';
 import { CELL_CLASS, HEADER_CLASS, WIDTH_VAR, RowLayout, ensureTemplate, getNativeTemplate, getRowLayout, getRowUri, getRows, getTracklists, insertCell, isHeaderRow, setTemplate } from './dom';
 import { ColumnKind, Track, buildTemplate, classifyColumns, parseTemplate } from './layout';
+import { hideDetachedTooltip, installTooltips, setTooltip } from './tooltip';
 import { clearCache, getTrackUriToPlaylistData, updateLikedTracks, updatePlaylistData } from './playlist';
 
-const VERSION = '0.3.1';
+const VERSION = '0.3.2';
 const PREFIX = 'spicetify-playlist-labels:';
 const SIZE_VAR = '--spicetify-playlist-labels-size';
 const GAP = 6;
@@ -154,6 +155,7 @@ function update() {
     }
 
     if (highlight && Date.now() > highlight.until) highlight = null;
+    hideDetachedTooltip();
 }
 
 /**
@@ -193,7 +195,6 @@ function ensureCell(row: HTMLElement, state: GridState, create: () => HTMLElemen
     let cell = Array.from(row.getElementsByClassName(className) as HTMLCollectionOf<HTMLElement>)
         .find((candidate) => candidate.closest('[role="row"]') === row) ?? null;
     if (cell && cell.parentElement !== layout.container) {
-        destroyTooltips(cell);
         cell.remove();
         cell = null;
     }
@@ -263,7 +264,6 @@ function renderCell(cell: HTMLElement, trackUri: string, labels: PlaylistData[],
     const hiddenLabels = labels.slice(visibleCount);
     if (visibleCount > 0 && hiddenLabels.length > 0) container.append(createMoreButton(hiddenLabels, trackUri));
 
-    destroyTooltips(cell);
     cell.replaceChildren(container);
 }
 
@@ -275,7 +275,7 @@ function createLabel(playlistData: PlaylistData, trackUri: string) {
     if (playlistData.isLikedTracks) label.classList.add('spicetify-playlist-labels-liked');
     label.append(createCover(playlistData));
 
-    addTooltip(label, playlistData.name);
+    setTooltip(label, playlistData.name);
     label.addEventListener('click', (event) => {
         event.stopPropagation();
         openPlaylist(playlistData, trackUri);
@@ -311,7 +311,7 @@ function createMoreButton(hiddenLabels: PlaylistData[], trackUri: string) {
     button.textContent = `+${hiddenLabels.length}`;
     const description = `${hiddenLabels.length} more playlist${hiddenLabels.length === 1 ? '' : 's'}`;
     button.setAttribute('aria-label', description);
-    addTooltip(button, description);
+    setTooltip(button, description);
     button.addEventListener('click', (event) => {
         event.stopPropagation();
         showMenu(menuPosition(event, button), hiddenLabels.map((playlistData) => ({
@@ -345,22 +345,6 @@ async function removeFromPlaylist(playlistData: PlaylistData, trackUri: string) 
         console.error('[playlist-labels] remove failed', error);
         Spicetify.showNotification(`Could not remove from ${playlistData.name}`, true);
     }
-}
-
-function addTooltip(element: HTMLElement, text: string) {
-    if (typeof Spicetify.Tippy === 'function') {
-        try {
-            Spicetify.Tippy(element, { ...Spicetify.TippyProps, content: text, delay: [200, 0] });
-            return;
-        } catch {
-            // Fall through to the native tooltip.
-        }
-    }
-    element.title = text;
-}
-
-function destroyTooltips(root: HTMLElement) {
-    root.querySelectorAll('button').forEach((element) => (element as any)._tippy?.destroy());
 }
 
 interface MenuItem {
@@ -546,6 +530,7 @@ async function main() {
     document.head.append(style);
 
     (window as any).PlaylistLabels = { version: VERSION, debug };
+    installTooltips();
     registerMenu();
 
     const mainView = document.querySelector('.Root__main-view') ?? document.body;
